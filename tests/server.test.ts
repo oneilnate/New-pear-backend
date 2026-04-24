@@ -11,11 +11,23 @@ import { app } from '../src/server.js';
  * Reset pod state before each suite run.
  * When bun test runs all files in the same process the :memory: DB is shared
  * across test files; we need an explicit reset so this file always starts clean.
+ * We also ensure the demo user + pod exist in case another test file's beforeAll
+ * inserted a different user first, preventing seedIfEmpty() from running.
  */
 beforeAll(async () => {
   const { default: db } = await import('../src/db.js');
+  db.run('DELETE FROM episodes');
   db.run('DELETE FROM meal_images');
-  db.run("UPDATE pods SET captured_count = 0, status = 'collecting' WHERE id = 'pod_demo_01'");
+  // Ensure demo user + pod exist (seed may not have run if another test added a user first)
+  db.query(
+    'INSERT OR IGNORE INTO users (id, email, name, profile, daily_targets) VALUES (?1, ?2, ?3, ?4, ?5)'
+  ).run('usr_demo_01', 'demo@everbetter.com', 'Sarah Chen',
+    JSON.stringify({ age: 32, weight_lbs: 140, height_in: 65, goals: ['weight_loss', 'energy'] }),
+    JSON.stringify({ calories: 1800, protein_g: 120, carbs_g: 180, fat_g: 60 }));
+  db.query(
+    'INSERT OR IGNORE INTO pods (id, user_id, target_count, captured_count, status) VALUES (?1, ?2, ?3, ?4, ?5)'
+  ).run('pod_demo_01', 'usr_demo_01', 7, 0, 'collecting');
+  db.run("UPDATE pods SET captured_count = 0, status = 'collecting', failure_reason = NULL WHERE id = 'pod_demo_01'");
 });
 
 describe('Food Pod Backend', () => {
@@ -97,12 +109,18 @@ describe('Food Pod Backend', () => {
 
   describe('POST /api/pods/:id/complete', () => {
     // These tests verify pod/meal-count logic, not the pipeline.
-    // A dummy key is set so the GEMINI_API_KEY guard passes.
-    const savedKey = process.env.GEMINI_API_KEY;
-    beforeAll(() => { process.env.GEMINI_API_KEY = 'dummy-key-for-complete-tests'; });
+    // Both keys are set so the credential guard passes; tests rely on captured_count < target.
+    const savedGemini = process.env.GEMINI_API_KEY;
+    const savedEleven = process.env.ELEVENLABS_API_KEY;
+    beforeAll(() => {
+      process.env.GEMINI_API_KEY = 'dummy-key-for-complete-tests';
+      process.env.ELEVENLABS_API_KEY = 'dummy-key-for-complete-tests';
+    });
     afterAll(() => {
-      if (savedKey !== undefined) process.env.GEMINI_API_KEY = savedKey;
+      if (savedGemini !== undefined) process.env.GEMINI_API_KEY = savedGemini;
       else delete process.env.GEMINI_API_KEY;
+      if (savedEleven !== undefined) process.env.ELEVENLABS_API_KEY = savedEleven;
+      else delete process.env.ELEVENLABS_API_KEY;
     });
 
     it('returns 400 with not enough meals when capturedCount < targetCount', async () => {
@@ -132,7 +150,7 @@ describe('Food Pod Backend', () => {
       );
       expect(res.status).toBe(404);
       const body = await res.json() as { error: string };
-      expect(body.error).toBe('episode not ready');
+      expect(body.error).toBe('NO_EPISODE');
     });
 
     it('returns 404 for unknown pod on episode', async () => {

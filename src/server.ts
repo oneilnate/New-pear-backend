@@ -9,11 +9,14 @@ import { seedIfEmpty } from './seed.js';
 seedIfEmpty();
 
 // Warn loudly at startup if pipeline credentials are missing
-if (!process.env.GEMINI_API_KEY) {
+const missingAtStartup: string[] = [];
+if (!process.env.GEMINI_API_KEY) missingAtStartup.push('GEMINI_API_KEY');
+if (!process.env.ELEVENLABS_API_KEY) missingAtStartup.push('ELEVENLABS_API_KEY');
+if (missingAtStartup.length > 0) {
   console.warn(
-    '[startup] WARNING: GEMINI_API_KEY is not set. ' +
-    'POST /api/pods/:id/complete will return 503 until the key is configured. ' +
-    'See README.md § "Getting a Gemini API Key" or DEPLOY.md § "Prerequisites".'
+    `[startup] WARNING: ${missingAtStartup.join(', ')} not set. ` +
+    'POST /api/pods/:id/complete will return 503 until keys are configured. ' +
+    'See README.md § Environment Variables or DEPLOY.md § Prerequisites.'
   );
 }
 
