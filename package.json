@@ -1,0 +1,23 @@
+{
+  "name": "new-pear-backend",
+  "version": "0.1.0",
+  "module": "src/server.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "start": "bun src/server.ts",
+    "test": "bun test",
+    "build": "echo 'No build step — Bun runs TypeScript directly'"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "vitest": "^4.1.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "hono": "^4.12.15"
+  }
+}
