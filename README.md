@@ -10,6 +10,67 @@
 
 Lightweight backend for the Food Pod prototype. One Bun process, no Docker, no Redis, no external DB — just SQLite on disk.
 
+---
+
+## Pipeline Flow (F4-E3)
+
+```
+POST /api/pods/:id/complete
+        │
+        ├─ 503 if GEMINI_API_KEY or ELEVENLABS_API_KEY missing
+        ├─ 400 if captured_count < target_count
+        │
+        └─► runPipeline(podId)
+                │
+                ├─ Step 1: Load pod from SQLite, validate captured_count >= target_count
+                ├─ Step 2: pod.status → 'generating'
+                │
+                ├─ Step 3: runVisionAndScript(podId)  [Gemini 1.5 Pro]
+                │         └─ All meal images attached as inline base64 JPEG parts
+                │         └─ Returns { title, summary, script, highlights[] }
+                │         └─ suggestSwaps(detectedGaps) enriches script with swap tips
+                │
+                ├─ Step 4: synthesizeAudio(script, episodeId)  [ElevenLabs Sarah]
+                │         └─ Writes MP3 to <FOODPOD_MEDIA_DIR>/audio/<episodeId>.mp3
+                │         └─ Duration enforced 60–240 s (retry up to 2x with truncated script)
+                │
+                ├─ Step 5: INSERT INTO episodes {id, pod_id, title, summary_text, script_text,
+                │                               audio_path, duration_sec, highlights, created_at}
+                ├─ Step 6: pod.status → 'ready', ready_at = now
+                └─ Return { episodeId, audioPath, durationSec, title, summary }
+
+        └► 200 { episodeId, audioUrl, durationSec, title, summary }
+```
+
+### State Machine
+
+```
+  collecting
+      │  (captured_count reaches target)
+      ▼
+  ready_to_generate   (set by image upload — informational transition)
+      │  (POST /complete called)
+      ▼
+  generating
+     │   \
+     ▼     ▼
+  ready   failed
+          (failure_reason set)
+```
+
+### Failure Modes
+
+| Scenario | HTTP | pod.status | pod.failure_reason |
+|----------|------|------------|--------------------|
+| Missing GEMINI_API_KEY or ELEVENLABS_API_KEY | 503 | unchanged | null |
+| captured_count < target_count | 400 | unchanged | null |
+| Gemini API error (rate limit, quota, etc.) | 500 | `failed` | error message |
+| ElevenLabs API error (network, auth, etc.) | 500 | `failed` | error message |
+| All images missing from disk | 500 | `failed` | error message |
+| Audio > 240 s after 2 retries | 500 | `failed` | error message |
+
+In all failure cases, the pod remains recoverable — POST /complete can be retried once the underlying issue is resolved. The `failureReason` field is returned by `GET /api/pods/:id` when status is `failed`.
+
 - **Runtime:** [Bun](https://bun.sh) 1.x
 - **Framework:** [Hono](https://hono.dev)
 - **Database:** [bun:sqlite](https://bun.sh/docs/api/sqlite) (Bun's built-in synchronous SQLite — not the `better-sqlite3` npm package; see Stack Note below)
@@ -79,6 +140,7 @@ cp .env.example .env
 | POST | `/api/pods/:id/complete` | Trigger episode generation |
 | GET | `/api/pods/:id/episode` | Get generated episode for pod |
 | GET | `/media/images/:filename` | Serve uploaded image from disk |
+| GET | `/media/audio/:filename` | Serve generated MP3 audio from disk |
 
 ### Image Upload
 
@@ -177,12 +239,20 @@ src/
     swap-library.json — 25 nutrient-gap swap entries (F2-E3)
     swap-library.ts  — suggestSwaps() helper + SwapEntry type
   pipeline/
-    gemini.ts        — Gemini vision+script stub (F4)
-    elevenlabs.ts    — ElevenLabs audio stub (F4)
-    run.ts           — Pipeline orchestrator stub
+    gemini.ts        — Gemini 1.5 Pro vision+script stage (F4-E1)
+    elevenlabs.ts    — ElevenLabs Sarah TTS stage (F4-E2)
+    mp3-duration.ts  — MP3 duration parser
+    run.ts           — Pipeline orchestrator + state machine (F4-E3)
+  data/
+    swap-library.json — 25 nutrient-gap swap entries (F2-E3)
+    swap-library.ts  — suggestSwaps() helper + SwapEntry type
 tests/
-  server.test.ts     — Vitest tests for all endpoints
+  server.test.ts       — Vitest tests for all endpoints
   swap-library.test.ts — 12 tests for swap data + suggestSwaps()
+  gemini.test.ts       — Unit + integration tests for Gemini stage
+  elevenlabs.test.ts   — Unit + integration tests for ElevenLabs stage
+  pipeline.test.ts     — Unit + integration tests for pipeline orchestrator (F4-E3)
+  routes.test.ts       — Route-level tests for /complete, /episode, /media/audio (F4-E3)
 .github/workflows/
   ci.yml             — bun install + bun test on every PR
 ```

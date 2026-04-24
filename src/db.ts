@@ -41,10 +41,20 @@ db.run(`
     captured_count INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'collecting',
     error_reason TEXT,
+    failure_reason TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     ready_at TEXT
   )
 `);
+
+// Idempotent migration: add failure_reason column if it doesn't exist yet.
+// Runs on every startup — safe on a fresh DB (column is in CREATE TABLE above)
+// and on an existing DB that predates this column.
+try {
+  db.run('ALTER TABLE pods ADD COLUMN failure_reason TEXT');
+} catch {
+  // Column already exists — ignore the error
+}
 
 db.run(`
   CREATE TABLE IF NOT EXISTS meal_images (
@@ -66,8 +76,16 @@ db.run(`
     script_text TEXT,
     audio_path TEXT,
     duration_sec INTEGER,
+    highlights TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   )
 `);
+
+// Idempotent migration: add highlights column to episodes if missing.
+try {
+  db.run('ALTER TABLE episodes ADD COLUMN highlights TEXT');
+} catch {
+  // Column already exists — ignore
+}
 
 export default db;
