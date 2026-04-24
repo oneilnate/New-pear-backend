@@ -116,3 +116,14 @@ Part of the **Food Pod — Standalone Expo + VM Backend** initiative.
 Companion frontend: [oneilnate/New-pear-Expo](https://github.com/oneilnate/New-pear-Expo)
 
 Built by **Buzz ONeil** @ EverBetter.
+
+---
+
+## Stack Note
+
+`bun:sqlite` is used instead of the `better-sqlite3` npm package. The
+`better-sqlite3` npm package ships a Node.js native addon (`.node` binary)
+which Bun does not load ([bun#4290](https://github.com/oven-sh/bun/issues/4290)).
+`bun:sqlite` is Bun's built-in SQLite module with an equivalent synchronous
+API — the intent of the locked decision is a synchronous SQLite driver,
+which `bun:sqlite` fulfils exactly.
