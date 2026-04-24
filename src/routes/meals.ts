@@ -102,7 +102,8 @@ meals.post('/api/pods/:id/images', async (c) => {
 /**
  * GET /media/images/:filename
  * Serves image files from <MEDIA_DIR>/images/.
- * Returns 404 if not found, 200 with image/jpeg + Cache-Control otherwise.
+ * Supports HTTP Range requests (206 Partial Content) for audio/image seeking.
+ * Returns 404 if not found, 200/206 with image/jpeg + Cache-Control + Accept-Ranges otherwise.
  */
 meals.get('/media/images/:filename', (c) => {
   const filename = c.req.param('filename');
@@ -118,13 +119,123 @@ meals.get('/media/images/:filename', (c) => {
     return c.json({ error: 'not found' }, 404);
   }
 
+  const stat = fs.statSync(absPath);
+  const totalSize = stat.size;
+  const rangeHeader = c.req.header('Range');
+
+  const baseHeaders: Record<string, string> = {
+    'Content-Type': 'image/jpeg',
+    'Cache-Control': 'public, max-age=604800, immutable',
+    'Accept-Ranges': 'bytes',
+  };
+
+  // Handle byte-range request (for audio/image seeking)
+  if (rangeHeader) {
+    const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+    if (match) {
+      const start = match[1] ? parseInt(match[1], 10) : 0;
+      const end   = match[2] ? parseInt(match[2], 10) : totalSize - 1;
+      const clampedEnd = Math.min(end, totalSize - 1);
+
+      if (start > clampedEnd || start >= totalSize) {
+        return new Response(null, {
+          status: 416,
+          headers: { ...baseHeaders, 'Content-Range': `bytes */${totalSize}` },
+        });
+      }
+
+      const chunkSize = clampedEnd - start + 1;
+      const fd = fs.openSync(absPath, 'r');
+      const buf = Buffer.alloc(chunkSize);
+      fs.readSync(fd, buf, 0, chunkSize, start);
+      fs.closeSync(fd);
+
+      return new Response(buf, {
+        status: 206,
+        headers: {
+          ...baseHeaders,
+          'Content-Range':  `bytes ${start}-${clampedEnd}/${totalSize}`,
+          'Content-Length': String(chunkSize),
+        },
+      });
+    }
+  }
+
+  // Full response
   const data = fs.readFileSync(absPath);
   return new Response(data, {
     status: 200,
-    headers: {
-      'Content-Type': 'image/jpeg',
-      'Cache-Control': 'public, max-age=3600',
-    },
+    headers: { ...baseHeaders, 'Content-Length': String(totalSize) },
+  });
+});
+
+/**
+ * GET /media/audio/:filename
+ * Serves MP3 audio files from <MEDIA_DIR>/audio/.
+ * Supports HTTP Range requests (206 Partial Content) for audio seeking.
+ * Returns 404 if not found, 200/206 with audio/mpeg + Cache-Control + Accept-Ranges otherwise.
+ */
+meals.get('/media/audio/:filename', (c) => {
+  const filename = c.req.param('filename');
+
+  // Basic path sanitisation — reject traversal attempts
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return c.json({ error: 'invalid filename' }, 400);
+  }
+
+  const absPath = path.join(getMediaDir(), 'audio', filename);
+
+  if (!fs.existsSync(absPath)) {
+    return c.json({ error: 'not found' }, 404);
+  }
+
+  const stat = fs.statSync(absPath);
+  const totalSize = stat.size;
+  const rangeHeader = c.req.header('Range');
+
+  const baseHeaders: Record<string, string> = {
+    'Content-Type': 'audio/mpeg',
+    'Cache-Control': 'public, max-age=604800, immutable',
+    'Accept-Ranges': 'bytes',
+  };
+
+  // Handle byte-range request (audio seeking)
+  if (rangeHeader) {
+    const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+    if (match) {
+      const start = match[1] ? parseInt(match[1], 10) : 0;
+      const end   = match[2] ? parseInt(match[2], 10) : totalSize - 1;
+      const clampedEnd = Math.min(end, totalSize - 1);
+
+      if (start > clampedEnd || start >= totalSize) {
+        return new Response(null, {
+          status: 416,
+          headers: { ...baseHeaders, 'Content-Range': `bytes */${totalSize}` },
+        });
+      }
+
+      const chunkSize = clampedEnd - start + 1;
+      const fd = fs.openSync(absPath, 'r');
+      const buf = Buffer.alloc(chunkSize);
+      fs.readSync(fd, buf, 0, chunkSize, start);
+      fs.closeSync(fd);
+
+      return new Response(buf, {
+        status: 206,
+        headers: {
+          ...baseHeaders,
+          'Content-Range':  `bytes ${start}-${clampedEnd}/${totalSize}`,
+          'Content-Length': String(chunkSize),
+        },
+      });
+    }
+  }
+
+  // Full response
+  const data = fs.readFileSync(absPath);
+  return new Response(data, {
+    status: 200,
+    headers: { ...baseHeaders, 'Content-Length': String(totalSize) },
   });
 });
 

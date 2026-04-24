@@ -100,8 +100,8 @@ chmod +x deploy/deploy.sh
 6. **Extracts** and runs `bun install --production`
 7. **Symlinks** `/opt/foodpod/current` → new release
 8. **Installs** `foodpod-backend.service` systemd unit, enables and restarts it
-9. **Injects** nginx location blocks for `/api/` and `/media/` (idempotent, uses `BEGIN_FOODPOD_NGINX` / `END_FOODPOD_NGINX` markers)
-10. **Runs** `nginx -t && nginx -s reload`
+9. **Injects** nginx location blocks for `/api/`, `/media/`, and `/media/audio/` (idempotent, uses `BEGIN_FOODPOD_NGINX` / `END_FOODPOD_NGINX` markers — re-running **replaces** the block, not duplicates it)
+10. **Runs** `nginx -t && systemctl reload nginx` (zero-downtime; reload only if config test passes)
 11. **Smoke-tests** `https://pear-sandbox.everbetter.com/api/health` — exits 1 if `{ok:true}` not returned
 12. **Cleans up** releases older than 3
 
@@ -197,6 +197,45 @@ curl https://pear-sandbox.everbetter.com/api/health
 /etc/systemd/system/
   foodpod-backend.service
 ```
+
+---
+
+---
+
+## Media Routes (F5-E2)
+
+| Route | Served By | MIME | Notes |
+|-------|-----------|------|-------|
+| `GET /media/images/:filename` | Hono backend → nginx `/media/` block | `image/jpeg` | Range requests supported (206) |
+| `GET /media/audio/:filename` | Hono backend → nginx `/media/audio/` block | `audio/mpeg` | Range requests + no buffering for seeking |
+
+### Cache Policy
+
+All media files use `Cache-Control: public, max-age=604800, immutable` (7 days, aggressively cached).
+This is safe because filenames are episode-id scoped and never recycled.
+
+### CORS Policy
+
+CORS headers are sent for the following origins (Expo web preview):
+- `https://localhost:8081` — Metro local dev server
+- `https://127.0.0.1:8081` — Metro local dev server (IP form)
+- `https://*.expo.dev` — Expo tunnel/preview URLs
+
+Headers exposed: `Content-Length`, `Content-Range`, `Accept-Ranges` (required for audio seeking in `<audio>` elements).
+
+### Range Requests
+
+Both `/media/images/` and `/media/audio/` support HTTP Range requests (`206 Partial Content`).
+The backend (Hono, `src/routes/meals.ts`) handles range slicing and returns:
+- `Accept-Ranges: bytes`
+- `Content-Range: bytes <start>-<end>/<total>`
+- `Content-Length: <chunk-size>`
+
+### nginx inject idempotency
+
+`deploy/nginx-inject.py` now **replaces** the existing `BEGIN_FOODPOD_NGINX`…`END_FOODPOD_NGINX` block
+on every deploy (instead of skipping if present). This ensures config updates land without manual SSH.
+Run `python3 deploy/nginx-inject.test.py` to verify idempotency behaviour locally.
 
 ---
 
