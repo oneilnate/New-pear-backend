@@ -88,4 +88,8 @@ try {
   // Column already exists — ignore
 }
 
+// Data migration: lower default target_count 30 → 7 for any existing pods
+// that were seeded before the default was changed. Safe to run on every startup.
+db.run("UPDATE pods SET target_count = 7 WHERE target_count = 30");
+
 export default db;

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import crypto from 'crypto';
 import db from '../db.js';
 import path from 'path';
 import fs from 'fs';
@@ -16,6 +17,185 @@ function getBaseUrl(c: { req: { url: string } }): string {
   const url = new URL(c.req.url);
   return `${url.protocol}//${url.host}`;
 }
+
+/** Default target meal count for a new pod. */
+const DEFAULT_TARGET_COUNT = 7;
+
+/** Demo user ID (single-user demo mode). */
+const DEMO_USER_ID = 'usr_demo_01';
+
+// ─── Helper: build the full pod response shape (reused by /current and /:id) ───
+
+function buildPodResponse(
+  pod: {
+    id: string;
+    status: string;
+    target_count: number;
+    captured_count: number;
+    created_at: string;
+    ready_at: string | null;
+    failure_reason: string | null;
+  },
+  c: { req: { url: string } }
+): Record<string, unknown> {
+  const snaps = db.query(`
+    SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number DESC LIMIT 5
+  `).all(pod.id) as Array<{ id: string; image_path: string; rating: string | null }>;
+
+  const recentSnaps = snaps.map((s) => ({
+    id: s.id,
+    thumb: `/media/images/${path.basename(s.image_path)}`,
+    rating: s.rating,
+  }));
+
+  let episode: object | null = null;
+  if (pod.status === 'ready') {
+    const episodeRow = db.query(`
+      SELECT id, title, summary_text, audio_path, duration_sec, highlights, created_at
+      FROM episodes WHERE pod_id = ? LIMIT 1
+    `).get(pod.id) as {
+      id: string;
+      title: string | null;
+      summary_text: string | null;
+      audio_path: string | null;
+      duration_sec: number | null;
+      highlights: string | null;
+      created_at: string;
+    } | undefined | null;
+
+    if (episodeRow) {
+      const baseUrl = getBaseUrl(c);
+      episode = {
+        episodeId: episodeRow.id,
+        audioUrl: episodeRow.audio_path
+          ? audioUrl(baseUrl, episodeRow.id)
+          : null,
+        durationSec: episodeRow.duration_sec,
+        title: episodeRow.title,
+        summary: episodeRow.summary_text,
+        highlights: episodeRow.highlights
+          ? (JSON.parse(episodeRow.highlights) as string[])
+          : [],
+        createdAt: episodeRow.created_at,
+      };
+    }
+  }
+
+  return {
+    id: pod.id,
+    status: pod.status,
+    targetCount: pod.target_count,
+    capturedCount: pod.captured_count,
+    recentSnaps,
+    episode,
+    ...(pod.failure_reason ? { failureReason: pod.failure_reason } : {}),
+  };
+}
+
+// ─── GET /api/pods/current ──────────────────────────────────────────────────
+//
+// Returns the newest pod for the demo user, ordered by created_at DESC.
+// If the user has no pod, auto-creates one with default target_count=7.
+// Never returns 404.
+
+pods.get('/api/pods/current', (c) => {
+  const userId = DEMO_USER_ID;
+
+  let pod = db.query(`
+    SELECT id, status, target_count, captured_count, created_at, ready_at, failure_reason
+    FROM pods WHERE user_id = ? ORDER BY created_at DESC LIMIT 1
+  `).get(userId) as {
+    id: string;
+    status: string;
+    target_count: number;
+    captured_count: number;
+    created_at: string;
+    ready_at: string | null;
+    failure_reason: string | null;
+  } | undefined | null;
+
+  if (!pod) {
+    // Auto-create a new pod for the user
+    const newPodId = `pod_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+    db.query(`
+      INSERT INTO pods (id, user_id, target_count, captured_count, status)
+      VALUES (?1, ?2, ?3, ?4, ?5)
+    `).run(newPodId, userId, DEFAULT_TARGET_COUNT, 0, 'collecting');
+
+    pod = db.query(`
+      SELECT id, status, target_count, captured_count, created_at, ready_at, failure_reason
+      FROM pods WHERE id = ?
+    `).get(newPodId) as {
+      id: string;
+      status: string;
+      target_count: number;
+      captured_count: number;
+      created_at: string;
+      ready_at: string | null;
+      failure_reason: string | null;
+    };
+  }
+
+  return c.json(buildPodResponse(pod, c));
+});
+
+// ─── GET /api/pods ──────────────────────────────────────────────────────────
+//
+// Returns array of all pods for the demo user, newest-first.
+// Minimal shape: id, created_at, status, captured_count, target_count.
+
+pods.get('/api/pods', (c) => {
+  const userId = DEMO_USER_ID;
+
+  const allPods = db.query(`
+    SELECT id, status, target_count, captured_count, created_at
+    FROM pods WHERE user_id = ? ORDER BY created_at DESC
+  `).all(userId) as Array<{
+    id: string;
+    status: string;
+    target_count: number;
+    captured_count: number;
+    created_at: string;
+  }>;
+
+  return c.json(allPods.map((p) => ({
+    id: p.id,
+    status: p.status,
+    targetCount: p.target_count,
+    capturedCount: p.captured_count,
+    createdAt: p.created_at,
+  })));
+});
+
+// ─── POST /api/pods ─────────────────────────────────────────────────────────
+//
+// Creates a new pod for the demo user with default target_count=7.
+// Returns the new pod in the standard Pod response shape.
+
+pods.post('/api/pods', (c) => {
+  const userId = DEMO_USER_ID;
+
+  const newPodId = `pod_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+  db.query(`
+    INSERT INTO pods (id, user_id, target_count, captured_count, status)
+    VALUES (?1, ?2, ?3, ?4, ?5)
+  `).run(newPodId, userId, DEFAULT_TARGET_COUNT, 0, 'collecting');
+
+  const pod = db.query(`
+    SELECT id, status, target_count, captured_count, created_at, ready_at, failure_reason
+    FROM pods WHERE id = ?
+  `).get(newPodId) as {
+    id: string;
+    status: string;
+    target_count: number;
+    captured_count: number;
+    created_at: string;
+    ready_at: string | null;
+    failure_reason: string | null;
+  };
+
+  return c.json(buildPodResponse(pod, c), 201);
+});
 
 // GET /api/pods/:id
 pods.get('/api/pods/:id', (c) => {
