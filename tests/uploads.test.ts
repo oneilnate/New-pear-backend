@@ -162,7 +162,9 @@ describe('GET /media/images/:filename', () => {
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('image/jpeg');
-    expect(res.headers.get('cache-control')).toBe('public, max-age=3600');
+    // F5-E2: cache policy updated to 7-day immutable (episode-id filenames are never recycled)
+    expect(res.headers.get('cache-control')).toBe('public, max-age=604800, immutable');
+    expect(res.headers.get('accept-ranges')).toBe('bytes');
     const buf = await res.arrayBuffer();
     expect(buf.byteLength).toBeGreaterThan(0);
   });

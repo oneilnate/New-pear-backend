@@ -176,7 +176,7 @@ blue "Installing nginx location blocks..."
 gscp_to "${SCRIPT_DIR}/foodpod-nginx.conf" "/tmp/foodpod-nginx.conf"
 gscp_to "${SCRIPT_DIR}/nginx-inject.py" "/tmp/nginx-inject.py"
 gsh "python3 /tmp/nginx-inject.py ${NGINX_CONF} /tmp/foodpod-nginx.conf"
-gsh "nginx -t && nginx -s reload && echo 'nginx reloaded'"
+gsh "nginx -t && systemctl reload nginx && echo 'nginx reloaded (zero-downtime)'"
 green "nginx updated"
 
 # ---------------------------------------------------------------------------
