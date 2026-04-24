@@ -66,12 +66,23 @@ async function postImage(podId: string, blob: Blob) {
  * Reset meal_images + captured_count at the start of this file.
  * Bun's test runner may share the module singleton (and its :memory: DB)
  * across test files in the same process, so we need an explicit reset.
+ * Also ensures the demo user + pod exist in case another test file's beforeAll
+ * inserted a different user first, preventing seedIfEmpty() from running.
  */
 beforeAll(async () => {
   // Lazily import db here to avoid a circular import at module scope
   const { default: db } = await import('../src/db.js');
   db.run('DELETE FROM meal_images');
-  db.run("UPDATE pods SET captured_count = 0 WHERE id = 'pod_demo_01'");
+  // Ensure demo user + pod exist
+  db.query(
+    'INSERT OR IGNORE INTO users (id, email, name, profile, daily_targets) VALUES (?1, ?2, ?3, ?4, ?5)'
+  ).run('usr_demo_01', 'demo@everbetter.com', 'Sarah Chen',
+    JSON.stringify({ age: 32, weight_lbs: 140, height_in: 65, goals: ['weight_loss', 'energy'] }),
+    JSON.stringify({ calories: 1800, protein_g: 120, carbs_g: 180, fat_g: 60 }));
+  db.query(
+    'INSERT OR IGNORE INTO pods (id, user_id, target_count, captured_count, status) VALUES (?1, ?2, ?3, ?4, ?5)'
+  ).run('pod_demo_01', 'usr_demo_01', 7, 0, 'collecting');
+  db.run("UPDATE pods SET captured_count = 0, status = 'collecting' WHERE id = 'pod_demo_01'");
 });
 
 afterAll(() => {
