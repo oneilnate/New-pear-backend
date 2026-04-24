@@ -12,7 +12,7 @@ Lightweight backend for the Food Pod prototype. One Bun process, no Docker, no R
 
 - **Runtime:** [Bun](https://bun.sh) 1.x
 - **Framework:** [Hono](https://hono.dev)
-- **Database:** [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
+- **Database:** [bun:sqlite](https://bun.sh/docs/api/sqlite) (Bun's built-in synchronous SQLite — not the `better-sqlite3` npm package; see Stack Note below)
 - **Binds:** `127.0.0.1:8787` (nginx reverse proxies from public port)
 - **Media:** `/srv/foodpod/media/` on the VM (images + audio MP3s on disk)
 
@@ -35,6 +35,14 @@ bun test
 bun run start
 ```
 
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8787` | Port the server binds to |
+| `FOODPOD_DB_PATH` | `<cwd>/foodpod.db` | Path to the SQLite database file |
+| `FOODPOD_MEDIA_DIR` | `<cwd>/media` | Root directory for media storage (images + audio). In production set to `/srv/foodpod/media`. Subdirectories `images/` and `audio/` are created automatically. |
+
 Copy `.env.example` to `.env` and fill in any env vars you need locally:
 
 ```bash
@@ -48,10 +56,24 @@ cp .env.example .env
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/health` | Health check |
-| GET | `/api/pods/:id` | Get pod + recent snaps + episode |
-| POST | `/api/pods/:id/images` | Upload a meal image (stub — F2-E2) |
+| GET | `/api/pods/:id` | Get pod + recent snaps (last 5) + episode |
+| POST | `/api/pods/:id/images` | Upload a meal image (multipart/form-data, field `image`) |
 | POST | `/api/pods/:id/complete` | Trigger episode generation |
 | GET | `/api/pods/:id/episode` | Get generated episode for pod |
+| GET | `/media/images/:filename` | Serve uploaded image from disk |
+
+### Image Upload
+
+`POST /api/pods/:id/images` accepts `multipart/form-data` with a single field `image` (File).
+
+- **Content-Type** must start with `image/` — returns `415` otherwise.
+- **Max size** is 10 MB — returns `413` for larger payloads.
+- Successful upload returns `{ imageId, sequenceNumber, capturedCount }`.
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/pods/pod_demo_01/images \
+  -F image=@/path/to/meal.jpg
+```
 
 ### Demo data (seeded on first boot)
 
@@ -97,7 +119,7 @@ src/
   routes/
     health.ts        — GET /api/health
     pods.ts          — Pod endpoints
-    meals.ts         — POST /api/pods/:id/images (stub)
+    meals.ts         — POST /api/pods/:id/images + GET /media/images/:filename
   pipeline/
     gemini.ts        — Gemini vision+script stub (F4)
     elevenlabs.ts    — ElevenLabs audio stub (F4)

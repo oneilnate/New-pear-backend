@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import db from '../db.js';
+import path from 'path';
 import { runPipeline } from '../pipeline/run.js';
 
 const pods = new Hono();
@@ -25,10 +26,14 @@ pods.get('/api/pods/:id', (c) => {
   }
 
   const snaps = db.query(`
-    SELECT id, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number ASC
-  `).all(id) as Array<{ id: string; rating: string | null }>;
+    SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number DESC LIMIT 5
+  `).all(id) as Array<{ id: string; image_path: string; rating: string | null }>;
 
-  const recentSnaps = snaps.map((s) => ({ id: s.id, thumb: null, rating: s.rating }));
+  const recentSnaps = snaps.map((s) => ({
+    id: s.id,
+    thumb: `/media/images/${path.basename(s.image_path)}`,
+    rating: s.rating,
+  }));
 
   const episodeRow = db.query(`
     SELECT id, title, summary_text, audio_path, duration_sec, created_at

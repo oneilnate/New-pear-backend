@@ -7,6 +7,17 @@ process.env.FOODPOD_DB_PATH = ':memory:';
 
 import { app } from '../src/server.js';
 
+/**
+ * Reset pod state before each suite run.
+ * When bun test runs all files in the same process the :memory: DB is shared
+ * across test files; we need an explicit reset so this file always starts clean.
+ */
+beforeAll(async () => {
+  const { default: db } = await import('../src/db.js');
+  db.run('DELETE FROM meal_images');
+  db.run("UPDATE pods SET captured_count = 0, status = 'collecting' WHERE id = 'pod_demo_01'");
+});
+
 describe('Food Pod Backend', () => {
   describe('GET /api/health', () => {
     it('returns 200 with ok:true', async () => {
@@ -46,9 +57,22 @@ describe('Food Pod Backend', () => {
   });
 
   describe('POST /api/pods/:id/images', () => {
+    // Minimal 1x1 JPEG bytes used for multipart upload tests
+    const TINY_JPEG = Buffer.from(
+      '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U' +
+      'HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN' +
+      'DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy' +
+      'MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAA' +
+      'AAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA' +
+      '/9oADAMBAAIRAxEAPwCwABmX/9k=',
+      'base64'
+    );
+
     it('returns 200 with imageId, sequenceNumber, capturedCount', async () => {
+      const fd = new FormData();
+      fd.append('image', new Blob([TINY_JPEG], { type: 'image/jpeg' }), 'meal.jpg');
       const res = await app.fetch(
-        new Request('http://localhost/api/pods/pod_demo_01/images', { method: 'POST' })
+        new Request('http://localhost/api/pods/pod_demo_01/images', { method: 'POST', body: fd })
       );
       expect(res.status).toBe(200);
       const body = await res.json() as {
@@ -62,8 +86,10 @@ describe('Food Pod Backend', () => {
     });
 
     it('returns 404 for unknown pod', async () => {
+      const fd = new FormData();
+      fd.append('image', new Blob([TINY_JPEG], { type: 'image/jpeg' }), 'meal.jpg');
       const res = await app.fetch(
-        new Request('http://localhost/api/pods/pod_nope/images', { method: 'POST' })
+        new Request('http://localhost/api/pods/pod_nope/images', { method: 'POST', body: fd })
       );
       expect(res.status).toBe(404);
     });
