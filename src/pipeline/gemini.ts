@@ -1,5 +1,5 @@
 /**
- * Gemini 1.5 Pro vision+script pipeline stage.
+ * Gemini 2.5 Pro vision+script pipeline stage.
  *
  * Single API call per pod — all meal images are attached as inlineData parts.
  * Returns structured JSON { title, summary, script, highlights[] } for the podcast.
@@ -21,7 +21,7 @@ export interface GeminiPodcastResult {
 
 /** Gemini API base URL (v1beta for structured output / responseSchema support). */
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_MODEL = 'gemini-1.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-pro';
 
 /** JSON schema sent as responseSchema so Gemini returns structured output. */
 const RESPONSE_SCHEMA = {
@@ -47,7 +47,7 @@ const SYSTEM_PROMPT =
   'Scripts should feel natural when spoken aloud and run 60-180 seconds (roughly 150-450 words).';
 
 /**
- * Run the Gemini 1.5 Pro vision+script stage for a given pod.
+ * Run the Gemini 2.5 Pro vision+script stage for a given pod.
  *
  * Reads meal_images for the pod from the database, loads the image files from
  * disk, then calls Gemini with all images attached plus the user's profile and
@@ -158,7 +158,7 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
       responseMimeType: 'application/json',
       responseSchema: RESPONSE_SCHEMA,
       temperature: 0.7,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 8192,
     },
   };
 
