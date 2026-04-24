@@ -42,6 +42,24 @@ bun run start
 | `PORT` | `8787` | Port the server binds to |
 | `FOODPOD_DB_PATH` | `<cwd>/foodpod.db` | Path to the SQLite database file |
 | `FOODPOD_MEDIA_DIR` | `<cwd>/media` | Root directory for media storage (images + audio). In production set to `/srv/foodpod/media`. Subdirectories `images/` and `audio/` are created automatically. |
+| `GEMINI_API_KEY` | _(required for F4 pipeline)_ | Google Gemini 1.5 Pro API key. If unset, `POST /api/pods/:id/complete` returns `503 pipeline disabled`. |
+| `ELEVENLABS_API_KEY` | _(required for F4 pipeline)_ | ElevenLabs API key for Sarah voice TTS (F4-E2). If unset, pipeline returns `503`. |
+| `ELEVENLABS_VOICE_ID` | _(required for F4 pipeline)_ | ElevenLabs voice ID (Sarah = `EXAVITQu4vr4xnSDxMaL`). |
+
+### Getting a Gemini API Key (F4 pipeline)
+
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey) and create a key.
+2. Add it to your local `.env`:
+   ```bash
+   echo 'GEMINI_API_KEY=your-key-here' >> .env
+   ```
+3. On the VM, update `/etc/foodpod/env` and restart:
+   ```bash
+   sudo nano /etc/foodpod/env  # add GEMINI_API_KEY=...
+   sudo systemctl restart foodpod-backend
+   ```
+
+If `GEMINI_API_KEY` is **not** set, the server still starts and all endpoints except `POST /complete` work normally. `POST /complete` returns `503 pipeline disabled — missing credentials`.
 
 Copy `.env.example` to `.env` and fill in any env vars you need locally:
 

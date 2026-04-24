@@ -68,6 +68,13 @@ pods.get('/api/pods/:id', (c) => {
 
 // POST /api/pods/:id/complete
 pods.post('/api/pods/:id/complete', async (c) => {
+  // Guard: pipeline requires GEMINI_API_KEY (and will require ELEVENLABS_API_KEY in F4-E2).
+  // Return 503 with a clear message rather than crashing or silently failing.
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn('[complete] 503 — pipeline disabled: GEMINI_API_KEY is not set');
+    return c.json({ error: 'pipeline disabled — missing credentials' }, 503);
+  }
+
   const id = c.req.param('id');
 
   const pod = db.query('SELECT id, status, target_count, captured_count FROM pods WHERE id = ?').get(id) as {
