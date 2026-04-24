@@ -109,6 +109,41 @@ ELEVENLABS_VOICE_ID=...
 
 ---
 
+## Swap Library
+
+The nutrient-gap swap library lives in `src/data/`:
+
+| File | Purpose |
+|------|---------|
+| `src/data/swap-library.json` | 25 curated swap entries (fiber, sugar, protein, sodium, saturated_fat, produce) |
+| `src/data/swap-library.ts` | TypeScript helper — `suggestSwaps(gaps)` returns top 3 swaps per gap category |
+
+### Usage
+
+```ts
+import { suggestSwaps } from './data/swap-library';
+
+// Returns up to 3 swap suggestions for each supplied gap category
+const swaps = suggestSwaps(['fiber', 'protein']);
+// → [{ id, category, from, to, why, impact }, ...]
+```
+
+Each swap entry has the shape:
+```ts
+{
+  id: string;           // 'swap_01' … 'swap_25'
+  category: string;     // 'fiber' | 'sugar' | 'protein' | 'sodium' | 'saturated_fat' | 'produce'
+  from: string;         // food being replaced
+  to: string;           // recommended swap
+  why: string;          // one-line evidence-based reason
+  impact: string;       // concrete numeric change (e.g. '+6g fiber per serving')
+}
+```
+
+To add a new entry: append an object to `swap-library.json` following the same shape; `suggestSwaps` picks it up automatically.
+
+---
+
 ## Project Structure
 
 ```
@@ -120,12 +155,16 @@ src/
     health.ts        — GET /api/health
     pods.ts          — Pod endpoints
     meals.ts         — POST /api/pods/:id/images + GET /media/images/:filename
+  data/
+    swap-library.json — 25 nutrient-gap swap entries (F2-E3)
+    swap-library.ts  — suggestSwaps() helper + SwapEntry type
   pipeline/
     gemini.ts        — Gemini vision+script stub (F4)
     elevenlabs.ts    — ElevenLabs audio stub (F4)
     run.ts           — Pipeline orchestrator stub
 tests/
   server.test.ts     — Vitest tests for all endpoints
+  swap-library.test.ts — 12 tests for swap data + suggestSwaps()
 .github/workflows/
   ci.yml             — bun install + bun test on every PR
 ```
