@@ -8,6 +8,15 @@ import { seedIfEmpty } from './seed.js';
 // Run schema + seed on startup
 seedIfEmpty();
 
+// Warn loudly at startup if pipeline credentials are missing
+if (!process.env.GEMINI_API_KEY) {
+  console.warn(
+    '[startup] WARNING: GEMINI_API_KEY is not set. ' +
+    'POST /api/pods/:id/complete will return 503 until the key is configured. ' +
+    'See README.md § "Getting a Gemini API Key" or DEPLOY.md § "Prerequisites".'
+  );
+}
+
 export const app = new Hono();
 
 app.use('*', logger());

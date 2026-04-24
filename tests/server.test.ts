@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 // MUST be set before any src/ import so db.ts opens :memory:
 // vitest runs each test file in its own worker, so this takes effect before
@@ -96,6 +96,15 @@ describe('Food Pod Backend', () => {
   });
 
   describe('POST /api/pods/:id/complete', () => {
+    // These tests verify pod/meal-count logic, not the pipeline.
+    // A dummy key is set so the GEMINI_API_KEY guard passes.
+    const savedKey = process.env.GEMINI_API_KEY;
+    beforeAll(() => { process.env.GEMINI_API_KEY = 'dummy-key-for-complete-tests'; });
+    afterAll(() => {
+      if (savedKey !== undefined) process.env.GEMINI_API_KEY = savedKey;
+      else delete process.env.GEMINI_API_KEY;
+    });
+
     it('returns 400 with not enough meals when capturedCount < targetCount', async () => {
       // After one image upload above, capturedCount is 1 which is still < 7
       const res = await app.fetch(
