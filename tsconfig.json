@@ -9,6 +9,6 @@
     "allowJs": true,
     "types": ["bun-types"]
   },
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "e2e"],
   "exclude": ["node_modules", "dist"]
 }

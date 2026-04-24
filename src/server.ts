@@ -3,6 +3,7 @@ import { logger } from 'hono/logger';
 import health from './routes/health.js';
 import pods from './routes/pods.js';
 import meals from './routes/meals.js';
+import dev from './routes/dev.js';
 import { seedIfEmpty } from './seed.js';
 
 // Run schema + seed on startup
@@ -28,6 +29,7 @@ app.use('*', logger());
 app.route('/', health);
 app.route('/', pods);
 app.route('/', meals);
+app.route('/', dev);
 
 // 404 fallback
 app.notFound((c) => c.json({ error: 'not found' }, 404));

@@ -8,16 +8,21 @@
     "dev": "bun --hot src/server.ts",
     "start": "bun src/server.ts",
     "test": "bun test",
-    "build": "echo 'No build step — Bun runs TypeScript directly'"
+    "build": "echo 'No build step — Bun runs TypeScript directly'",
+    "e2e:smoke": "bun run e2e/smoke.ts",
+    "e2e:reset": "bun run e2e/reset-pod.ts",
+    "e2e:generate": "bun run e2e/fixtures/generate.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/sharp": "^0.32.0",
     "vitest": "^4.1.5"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "hono": "^4.12.15"
+    "hono": "^4.12.15",
+    "sharp": "^0.34.5"
   }
 }

@@ -1,0 +1,90 @@
+name: Nightly E2E Smoke Test
+
+# Runs daily at 09:00 UTC against the live pear-sandbox VM.
+# This is the canary that catches drift before the demo.
+#
+# To run manually:
+#   gh workflow run nightly-smoke.yml
+#
+# Required secrets (repository / environment):
+#   GCP_SA_KEY  — GCP Service Account key JSON (for SSH to the VM)
+#
+# Optional secrets:
+#   API_BASE    — override backend URL (default: https://pear-sandbox.everbetter.com)
+#   POD_ID      — override pod ID        (default: pod_demo_01)
+#   DEV_TOKEN   — X-Dev-Token for reset endpoint (required if NODE_ENV=production on VM)
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: 'Override API_BASE (default: https://pear-sandbox.everbetter.com)'
+        required: false
+        default: ''
+      pod_id:
+        description: 'Override POD_ID (default: pod_demo_01)'
+        required: false
+        default: ''
+      skip_reset:
+        description: 'Skip pod reset before smoke (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  smoke:
+    name: E2E Smoke Test (VM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Reset pod before smoke run
+        if: ${{ github.event.inputs.skip_reset != 'true' }}
+        env:
+          API_BASE:  ${{ github.event.inputs.api_base || 'https://pear-sandbox.everbetter.com' }}
+          POD_ID:    ${{ github.event.inputs.pod_id   || 'pod_demo_01' }}
+          DEV_TOKEN: ${{ secrets.DEV_TOKEN }}
+        run: bun run e2e:reset
+
+      - name: Run E2E smoke test
+        id: smoke
+        env:
+          API_BASE: ${{ github.event.inputs.api_base || 'https://pear-sandbox.everbetter.com' }}
+          POD_ID:   ${{ github.event.inputs.pod_id   || 'pod_demo_01' }}
+        run: bun run e2e:smoke
+
+      - name: Post smoke result to workflow summary
+        if: always()
+        run: |
+          if [ "${{ steps.smoke.outcome }}" = "success" ]; then
+            echo "## ✅ E2E Smoke Test Passed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| VM | ${{ github.event.inputs.api_base || 'https://pear-sandbox.everbetter.com' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Pod | ${{ github.event.inputs.pod_id || 'pod_demo_01' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Run | ${{ github.run_id }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ E2E Smoke Test FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| VM | ${{ github.event.inputs.api_base || 'https://pear-sandbox.everbetter.com' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Pod | ${{ github.event.inputs.pod_id || 'pod_demo_01' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Run | ${{ github.run_id }} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> Check the logs above for the failing step and error message." >> $GITHUB_STEP_SUMMARY
+          fi
+

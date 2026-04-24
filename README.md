@@ -174,6 +174,71 @@ Schema is created automatically on startup via `src/db.ts`.
 
 ---
 
+## E2E Smoke Test
+
+The smoke test exercises the full stack: 7 fixture JPEGs → live VM backend → real MP3 validated.
+It is the canary that catches drift before a demo.
+
+### Quick Start
+
+```bash
+# 1. (Optional) Reset pod to a clean state
+bun run e2e:reset
+
+# 2. Run the full smoke test
+bun run e2e:smoke
+```
+
+Exit 0 = all steps pass (or partial pass when pipeline keys are not yet set)  
+Exit 1 = hard failure — investigate the step summary printed to stdout
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `API_BASE` | `https://pear-sandbox.everbetter.com` | Backend base URL |
+| `POD_ID` | `pod_demo_01` | Pod to use for the smoke run |
+| `DEV_TOKEN` | _(empty)_ | `X-Dev-Token` header for the reset endpoint (required if `NODE_ENV=production` on the VM) |
+
+### Local dev / staging
+
+```bash
+# Target local dev server
+API_BASE=http://localhost:8787 bun run e2e:smoke
+
+# Reset against local server
+API_BASE=http://localhost:8787 bun run e2e:reset
+```
+
+### What the smoke test verifies
+
+| Step | Assertion |
+|---|---|
+| 1. GET /api/health | `{ok: true}` |
+| 2. Load 7 fixtures | 7 JPEGs found in `e2e/fixtures/meals/` |
+| 3. POST 7 images | Each returns HTTP 200 + `capturedCount` |
+| 4. GET /api/pods/:id | `capturedCount === 7`, status is valid |
+| 5. POST /complete | 200 with `{episodeId, audioUrl, durationSec, title, summary}` (503 → partial pass) |
+| 6. Download MP3 | Size > 10 KB, valid MP3 header, duration 60–240 s |
+| 7. GET /episode | Returns same `episodeId` |
+
+### Regenerating fixtures
+
+```bash
+bun run e2e:generate
+```
+
+Generates 7 placeholder 640×480 JPEG swatches (Meal 1–7) using `sharp`.  
+The generated files are committed to the repo — regeneration is only needed if they are lost.
+
+### Nightly CI
+
+A GitHub Actions workflow (`.github/workflows/nightly-smoke.yml`) runs `bun run e2e:reset` +  
+`bun run e2e:smoke` daily at 09:00 UTC against the live VM.  
+Results appear in the GitHub Actions workflow summary.
+
+---
+
 ## Deploy
 
 > **deploy.sh** will be added in F5 (VM provisioning + systemd setup).
