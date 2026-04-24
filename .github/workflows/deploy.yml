@@ -1,0 +1,48 @@
+name: Deploy to pear-sandbox VM
+
+# Triggered manually from GitHub Actions UI or via API.
+# Required repo secret: GCP_SA_KEY (JSON key for pear-sandbox-agent SA)
+# See DEPLOY.md for setup instructions.
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for deploy (optional)'
+        required: false
+        default: 'Manual deploy'
+
+jobs:
+  deploy:
+    name: Deploy to pear-sandbox.everbetter.com
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: obvious-compute-45868
+
+      - name: Make deploy.sh executable
+        run: chmod +x deploy/deploy.sh
+
+      - name: Run deploy
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          # These are passed through to /etc/foodpod/env only on first deploy.
+          # If env file already exists on VM, these are ignored (preserving manual edits).
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        run: ./deploy/deploy.sh
+
+      - name: Verify health endpoint
+        run: |
+          sleep 3
+          echo "Verifying https://pear-sandbox.everbetter.com/api/health ..."
+          RESPONSE=$(curl -sf --max-time 15 https://pear-sandbox.everbetter.com/api/health)
+          echo "Response: $RESPONSE"
+          echo "$RESPONSE" | grep -q '"ok":true' && echo "Health check PASSED" || (echo "Health check FAILED" && exit 1)
+
