@@ -1,0 +1,202 @@
+[
+  {
+    "id": "swap_01",
+    "category": "fiber",
+    "from": "white rice",
+    "to": "brown rice + black beans",
+    "why": "Brown rice + legumes nearly triple fiber content and slow glucose absorption",
+    "impact": "+6g fiber per serving"
+  },
+  {
+    "id": "swap_02",
+    "category": "fiber",
+    "from": "white pasta",
+    "to": "whole wheat pasta",
+    "why": "Whole wheat pasta retains the bran, delivering 3-4x more fiber per cup",
+    "impact": "+4g fiber per cup"
+  },
+  {
+    "id": "swap_03",
+    "category": "fiber",
+    "from": "white sandwich bread",
+    "to": "sprouted grain bread",
+    "why": "Sprouted grains have higher bioavailable fiber and lower glycemic impact than refined white bread",
+    "impact": "+3g fiber per 2 slices"
+  },
+  {
+    "id": "swap_04",
+    "category": "fiber",
+    "from": "peeled apple",
+    "to": "whole apple with skin",
+    "why": "Apple skin contains insoluble fiber (pectin) that feeds gut microbiome",
+    "impact": "+2g fiber per apple"
+  },
+  {
+    "id": "swap_05",
+    "category": "fiber",
+    "from": "fruit juice",
+    "to": "whole fruit",
+    "why": "Juicing removes essentially all fiber; whole fruit preserves it and blunts blood-sugar spike",
+    "impact": "+3g fiber, -20g sugar spike"
+  },
+  {
+    "id": "swap_06",
+    "category": "sugar",
+    "from": "soda (12 oz)",
+    "to": "sparkling water with citrus slices",
+    "why": "Swapping one daily soda eliminates ~39g added sugar while preserving carbonation habit",
+    "impact": "-39g added sugar per can"
+  },
+  {
+    "id": "swap_07",
+    "category": "sugar",
+    "from": "flavored fruit yogurt",
+    "to": "plain Greek yogurt with fresh berries",
+    "why": "Flavored yogurts average 20g added sugar; plain yogurt + whole berries provides sweetness with fiber and antioxidants",
+    "impact": "-18g added sugar per cup"
+  },
+  {
+    "id": "swap_08",
+    "category": "sugar",
+    "from": "sweetened breakfast cereal",
+    "to": "rolled oats with fresh berries",
+    "why": "Most sweetened cereals spike blood sugar within 30 min; oats release glucose slowly due to beta-glucan",
+    "impact": "-22g added sugar, +4g fiber"
+  },
+  {
+    "id": "swap_09",
+    "category": "sugar",
+    "from": "candy bar",
+    "to": "2 squares dark chocolate (70%+)",
+    "why": "Dark chocolate (70%+) has ~4g sugar vs. ~30g in a candy bar, plus polyphenols with antioxidant benefit",
+    "impact": "-26g added sugar per serving"
+  },
+  {
+    "id": "swap_10",
+    "category": "sugar",
+    "from": "sweetened latte (vanilla/caramel)",
+    "to": "unsweetened latte with cinnamon",
+    "why": "Flavored syrups add 30-50 kcal per pump; cinnamon provides sweetness perception and may improve insulin sensitivity",
+    "impact": "-25g added sugar per drink"
+  },
+  {
+    "id": "swap_11",
+    "category": "protein",
+    "from": "refined carb breakfast (bagel, pastry)",
+    "to": "2 scrambled eggs + vegetables",
+    "why": "Protein at breakfast reduces ghrelin and mid-morning snacking; eggs provide complete amino acid profile",
+    "impact": "+12g protein, sustained satiety 3-4 hrs"
+  },
+  {
+    "id": "swap_12",
+    "category": "protein",
+    "from": "snack chips (1 oz bag)",
+    "to": "beef jerky or mixed nuts (1 oz)",
+    "why": "Chips deliver almost zero protein; jerky or nuts provide 8-12g protein and healthy fats that extend satiety",
+    "impact": "+10g protein per snack"
+  },
+  {
+    "id": "swap_13",
+    "category": "protein",
+    "from": "white pasta dinner",
+    "to": "lentil or chickpea pasta",
+    "why": "Legume-based pasta delivers 3x the protein and 4x the fiber of refined wheat pasta with similar texture",
+    "impact": "+14g protein, +8g fiber per 2 oz dry"
+  },
+  {
+    "id": "swap_14",
+    "category": "protein",
+    "from": "pancake breakfast",
+    "to": "protein oats (oats + protein powder + milk)",
+    "why": "Standard pancakes are mostly refined carbs; protein oats hit 25-30g protein with slow-digesting complex carbs",
+    "impact": "+22g protein per bowl"
+  },
+  {
+    "id": "swap_15",
+    "category": "protein",
+    "from": "granola bar snack",
+    "to": "plain Greek yogurt (5-6 oz)",
+    "why": "Granola bars average 3g protein; Greek yogurt provides 15g complete protein with live cultures for gut health",
+    "impact": "+12g protein per snack"
+  },
+  {
+    "id": "swap_16",
+    "category": "sodium",
+    "from": "deli meat sandwich",
+    "to": "roast chicken breast sandwich",
+    "why": "Processed deli meats contain 700-1200mg sodium per 2 oz; roasted chicken has <100mg and no preservatives",
+    "impact": "-900mg sodium per meal"
+  },
+  {
+    "id": "swap_17",
+    "category": "sodium",
+    "from": "canned condensed soup",
+    "to": "homemade vegetable soup",
+    "why": "Canned soups average 800-1100mg sodium per serving; homemade versions average 150-300mg with full ingredient control",
+    "impact": "-700mg sodium per bowl"
+  },
+  {
+    "id": "swap_18",
+    "category": "sodium",
+    "from": "fast food combo meal",
+    "to": "meal-prep grain bowl with grilled protein",
+    "why": "Fast food combos routinely exceed 1500mg sodium; a prepared grain bowl averages 400-500mg with nutrient density gains",
+    "impact": "-1100mg sodium per meal"
+  },
+  {
+    "id": "swap_19",
+    "category": "saturated_fat",
+    "from": "butter for cooking",
+    "to": "extra-virgin olive oil",
+    "why": "Butter is ~63% saturated fat; EVOO is ~14% saturated and ~73% heart-healthy monounsaturated fat (oleic acid)",
+    "impact": "-7g saturated fat per tbsp"
+  },
+  {
+    "id": "swap_20",
+    "category": "saturated_fat",
+    "from": "cream-based pasta sauce",
+    "to": "tomato-based marinara sauce",
+    "why": "Heavy cream sauce packs 10-15g saturated fat per half cup; marinara averages <1g and provides lycopene",
+    "impact": "-12g saturated fat per serving"
+  },
+  {
+    "id": "swap_21",
+    "category": "saturated_fat",
+    "from": "fried chicken",
+    "to": "oven-baked chicken with spice rub",
+    "why": "Frying adds 8-12g fat per piece mostly from the oil absorbed into batter; baking retains moisture without the fat",
+    "impact": "-10g fat, -120 kcal per piece"
+  },
+  {
+    "id": "swap_22",
+    "category": "produce",
+    "from": "meat-heavy lunch",
+    "to": "grain bowl with roasted vegetables + tahini",
+    "why": "Plant-forward bowls add 3-5 servings of vegetables in one meal, hitting recommended 5-a-day midday",
+    "impact": "+4 vegetable servings, +8g fiber"
+  },
+  {
+    "id": "swap_23",
+    "category": "produce",
+    "from": "white rice or potato side",
+    "to": "roasted broccoli and cauliflower",
+    "why": "Cruciferous vegetables provide sulforaphane, vitamin C, and fiber while cutting net carbs by ~30g per cup",
+    "impact": "+2 vegetable servings, -25g net carbs"
+  },
+  {
+    "id": "swap_24",
+    "category": "produce",
+    "from": "cookie or cake dessert",
+    "to": "mixed berry bowl with mint",
+    "why": "Berries provide antioxidants, vitamin C, and natural sweetness with <10g sugar vs. 30-40g in baked goods",
+    "impact": "+1 fruit serving, -28g added sugar"
+  },
+  {
+    "id": "swap_25",
+    "category": "produce",
+    "from": "breakfast pastry",
+    "to": "smoothie with spinach, banana, and almond milk",
+    "why": "Blending greens into a smoothie is the easiest way to hit 1-2 vegetable servings at breakfast without tasting them",
+    "impact": "+2 produce servings, +3g fiber"
+  }
+]
