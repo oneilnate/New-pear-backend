@@ -1,0 +1,21 @@
+[Unit]
+Description=Food Pod Backend (Bun + Hono)
+Documentation=https://github.com/oneilnate/New-pear-backend
+After=network.target
+
+[Service]
+Type=simple
+User=foodpod
+Group=foodpod
+WorkingDirectory=/opt/foodpod/current
+ExecStart=/usr/local/bin/bun run /opt/foodpod/current/src/server.ts
+EnvironmentFile=/etc/foodpod/env
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=foodpod-backend
+
+[Install]
+WantedBy=multi-user.target
+
