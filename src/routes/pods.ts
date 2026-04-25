@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import crypto from 'crypto';
 import db from '../db.js';
 import path from 'path';
@@ -12,10 +13,22 @@ function audioUrl(baseUrl: string, episodeId: string): string {
   return `${baseUrl}/media/audio/${episodeId}.mp3`;
 }
 
-/** Derive the request base URL (scheme://host) from a Hono context. */
-function getBaseUrl(c: { req: { url: string } }): string {
+/** Derive the request base URL (scheme://host) from a Hono context.
+ *
+ * When the server is behind a TLS-terminating reverse proxy (nginx), the raw
+ * request URL will have an http:// scheme even though clients connected over
+ * HTTPS.  nginx (and other proxies) set X-Forwarded-Proto / X-Forwarded-Host
+ * headers so the application can reconstruct the public-facing URL.  We prefer
+ * those headers when present; otherwise we fall back to the URL parsed from the
+ * raw request (useful for local development with no proxy).
+ */
+function getBaseUrl(c: Context): string {
   const url = new URL(c.req.url);
-  return `${url.protocol}//${url.host}`;
+  const forwardedProto = c.req.header('x-forwarded-proto');
+  const forwardedHost = c.req.header('x-forwarded-host');
+  const protocol = forwardedProto ? `${forwardedProto}:` : url.protocol;
+  const host = forwardedHost ?? url.host;
+  return `${protocol}//${host}`;
 }
 
 /** Default target meal count for a new pod. */
@@ -36,7 +49,7 @@ function buildPodResponse(
     ready_at: string | null;
     failure_reason: string | null;
   },
-  c: { req: { url: string } }
+  c: Context
 ): Record<string, unknown> {
   const snaps = db.query(`
     SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number DESC LIMIT 5
