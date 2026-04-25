@@ -349,6 +349,72 @@ describe('GET /api/pods/:id — updated fields', () => {
   });
 });
 
+// ── getBaseUrl — X-Forwarded-Proto / X-Forwarded-Host ─────────────────────
+// These tests verify that audioUrl uses https:// when nginx sets forwarding
+// headers, and falls back to the request URL scheme for local dev.
+
+describe('audioUrl scheme — X-Forwarded-Proto header', () => {
+  beforeEach(() => {
+    db.run(`UPDATE pods SET status = 'ready', captured_count = 7, failure_reason = NULL WHERE id = 'pod_demo_01'`);
+    db.run('DELETE FROM episodes');
+    db.query(
+      `INSERT INTO episodes
+        (id, pod_id, title, summary_text, script_text, audio_path, duration_sec, highlights, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+    ).run(
+      'ep_scheme_test_01', 'pod_demo_01',
+      'Scheme Test', 'Summary', 'Script',
+      'audio/ep_scheme_test_01.mp3', 90,
+      JSON.stringify(['test']),
+      new Date().toISOString()
+    );
+  });
+
+  it('returns https:// audioUrl when X-Forwarded-Proto: https is set', async () => {
+    const res = await app.fetch(
+      new Request('http://pear-sandbox.everbetter.com/api/pods/pod_demo_01/episode', {
+        headers: {
+          'x-forwarded-proto': 'https',
+          'x-forwarded-host': 'pear-sandbox.everbetter.com',
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json() as { audioUrl: string | null };
+    expect(body.audioUrl).not.toBeNull();
+    expect(body.audioUrl!).toMatch(/^https:\/\//);
+    expect(body.audioUrl!).toMatch(/pear-sandbox\.everbetter\.com\/media\/audio\/ep_scheme_test_01\.mp3$/);
+  });
+
+  it('returns http:// audioUrl when no forwarding headers are set (local dev)', async () => {
+    const res = await app.fetch(
+      new Request('http://localhost:3000/api/pods/pod_demo_01/episode')
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json() as { audioUrl: string | null };
+    expect(body.audioUrl).not.toBeNull();
+    expect(body.audioUrl!).toMatch(/^http:\/\//);
+    expect(body.audioUrl!).toMatch(/localhost:3000\/media\/audio\/ep_scheme_test_01\.mp3$/);
+  });
+
+  it('returns https:// audioUrl in GET /api/pods/:id when X-Forwarded-Proto: https is set', async () => {
+    const res = await app.fetch(
+      new Request('http://pear-sandbox.everbetter.com/api/pods/pod_demo_01', {
+        headers: {
+          'x-forwarded-proto': 'https',
+          'x-forwarded-host': 'pear-sandbox.everbetter.com',
+        },
+      })
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json() as {
+      episode: { audioUrl: string } | null;
+    };
+    expect(body.episode).not.toBeNull();
+    expect(body.episode!.audioUrl).toMatch(/^https:\/\//);
+  });
+});
+
 // ── GET /media/audio/:filename ──────────────────────────────────────────────
 
 describe('GET /media/audio/:filename', () => {
