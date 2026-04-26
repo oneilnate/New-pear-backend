@@ -15,7 +15,6 @@ jobs:
   deploy:
     name: Deploy to pear-sandbox.everbetter.com
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: Checkout repo
