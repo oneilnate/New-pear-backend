@@ -111,20 +111,23 @@ function mockBothApis(geminiResult?: GeminiResponseData): void {
     highlights: ['fiber gap', 'protein gap'],
   };
 
+  const geminiEnvelope = JSON.stringify({
+    candidates: [{
+      content: {
+        parts: [{ text: JSON.stringify(geminiResponse) }],
+      },
+    }],
+  });
+
   globalThis.fetch = async (url: unknown, init?: unknown) => {
     const urlStr = String(url);
     if (urlStr.includes('generativelanguage.googleapis.com')) {
       return {
         ok: true,
         status: 200,
-        json: async () => ({
-          candidates: [{
-            content: {
-              parts: [{ text: JSON.stringify(geminiResponse) }],
-            },
-          }],
-        }),
-        text: async () => '',
+        headers: { get: (_h: string) => 'application/json' },
+        json: async () => JSON.parse(geminiEnvelope),
+        text: async () => geminiEnvelope,
       } as unknown as Response;
     }
     if (urlStr.includes('api.elevenlabs.io')) {
@@ -132,6 +135,7 @@ function mockBothApis(geminiResult?: GeminiResponseData): void {
         ok: true,
         status: 200,
         body: makeReadableStream(fakeMp3()),
+        headers: { get: (_h: string) => null },
         text: async () => '',
       } as unknown as Response;
     }
@@ -165,19 +169,22 @@ function mockElevenLabsFailure(errMsg: string): void {
         script: 'Script.',
         highlights: ['fiber'],
       };
+      const envelope = JSON.stringify({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(geminiResponse) }] } }],
+      });
       return {
         ok: true,
         status: 200,
-        json: async () => ({
-          candidates: [{ content: { parts: [{ text: JSON.stringify(geminiResponse) }] } }],
-        }),
-        text: async () => '',
+        headers: { get: (_h: string) => 'application/json' },
+        json: async () => JSON.parse(envelope),
+        text: async () => envelope,
       } as unknown as Response;
     }
     if (urlStr.includes('api.elevenlabs.io')) {
       return {
         ok: false,
         status: 503,
+        headers: { get: (_h: string) => null },
         text: async () => errMsg,
         body: null,
       } as unknown as Response;

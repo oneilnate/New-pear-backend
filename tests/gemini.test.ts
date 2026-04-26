@@ -318,6 +318,92 @@ describe('runVisionAndScript — unit (mocked fetch)', () => {
     vi.restoreAllMocks();
   });
 
+  it('uses fallback string when profile JSON is malformed (does NOT throw)', async () => {
+    const podId = seedPodWithImages(1);
+    // Corrupt the profile JSON
+    db.run(`UPDATE users SET profile = '{bad json' WHERE id = 'usr_gemini_test'`);
+
+    const expectedResult = {
+      title: 'Week Recap',
+      summary: 'Good week.',
+      script: 'Hello Buzz, great week of eating!',
+      highlights: ['More fiber needed'],
+    };
+
+    const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify(mockGeminiResponse(expectedResult)), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    // Should not throw despite malformed profile
+    const result = await runVisionAndScript(podId);
+    expect(result.title).toBe(expectedResult.title);
+
+    // The prompt sent to Gemini should include the fallback string
+    const [, calledInit] = (mockFetch as Mock).mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(calledInit.body)) as {
+      contents: Array<{ parts: Array<Record<string, unknown>> }>;
+    };
+    const textPart = String((body.contents[0].parts[0] as { text: string }).text);
+    expect(textPart).toContain('No profile available.');
+
+    vi.restoreAllMocks();
+  });
+
+  it('uses fallback string when daily_targets JSON is malformed (does NOT throw)', async () => {
+    const podId = seedPodWithImages(1);
+    // Corrupt daily_targets JSON
+    db.run(`UPDATE users SET daily_targets = '[truncated' WHERE id = 'usr_gemini_test'`);
+
+    const expectedResult = {
+      title: 'Targets Week',
+      summary: 'Keep it up.',
+      script: 'Hey Buzz, you are doing great!',
+      highlights: ['Protein on point'],
+    };
+
+    const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify(mockGeminiResponse(expectedResult)), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    // Should not throw despite malformed daily_targets
+    const result = await runVisionAndScript(podId);
+    expect(result.title).toBe(expectedResult.title);
+
+    // The prompt should use the fallback
+    const [, calledInit] = (mockFetch as Mock).mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(calledInit.body)) as {
+      contents: Array<{ parts: Array<Record<string, unknown>> }>;
+    };
+    const textPart = String((body.contents[0].parts[0] as { text: string }).text);
+    expect(textPart).toContain('No daily targets available.');
+
+    vi.restoreAllMocks();
+  });
+
+  it('throws prefixed error with HTTP status when Gemini envelope is not valid JSON', async () => {
+    const podId = seedPodWithImages(1);
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('{not json', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      })
+    );
+
+    // Capture the promise once so both matchers exercise the same rejection
+    const rejection = runVisionAndScript(podId);
+    await expect(rejection).rejects.toThrow(/\[gemini\] envelope JSON malformed/);
+    await expect(rejection).rejects.toThrow(/HTTP 200/);
+
+    vi.restoreAllMocks();
+  });
+
   it('returns empty highlights array when Gemini omits that field', async () => {
     const podId = seedPodWithImages(1);
 
