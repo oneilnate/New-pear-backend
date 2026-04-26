@@ -148,19 +148,22 @@ describe('POST /api/pods/:id/complete', () => {
           script: 'This is the test script.',
           highlights: ['fiber gap'],
         };
+        const envelope = JSON.stringify({
+          candidates: [{ content: { parts: [{ text: JSON.stringify(geminiData) }] } }],
+        });
         return {
           ok: true,
           status: 200,
-          json: async () => ({
-            candidates: [{ content: { parts: [{ text: JSON.stringify(geminiData) }] } }],
-          }),
-          text: async () => '',
+          headers: { get: (_h: string) => 'application/json' },
+          json: async () => JSON.parse(envelope),
+          text: async () => envelope,
         } as unknown as Response;
       }
       if (urlStr.includes('api.elevenlabs.io')) {
         return {
           ok: true,
           status: 200,
+          headers: { get: (_h: string) => null },
           body: new ReadableStream<Uint8Array>({
             start(c) { c.enqueue(fakeMp3); c.close(); },
           }),

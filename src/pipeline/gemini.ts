@@ -85,12 +85,25 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
     throw new Error(`[gemini] pod not found: ${podId}`);
   }
 
-  const profile = podRow.profile
-    ? JSON.stringify(JSON.parse(podRow.profile), null, 2)
-    : 'No profile available.';
-  const targets = podRow.daily_targets
-    ? JSON.stringify(JSON.parse(podRow.daily_targets), null, 2)
-    : 'No daily targets available.';
+  let profile = 'No profile available.';
+  if (podRow.profile) {
+    try {
+      profile = JSON.stringify(JSON.parse(podRow.profile), null, 2);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[gemini] profile JSON malformed for pod=${podId}, falling back: ${msg}`);
+    }
+  }
+
+  let targets = 'No daily targets available.';
+  if (podRow.daily_targets) {
+    try {
+      targets = JSON.stringify(JSON.parse(podRow.daily_targets), null, 2);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[gemini] daily_targets JSON malformed for pod=${podId}, falling back: ${msg}`);
+    }
+  }
 
   // ── 2. Load meal images ─────────────────────────────────────────────────────
   const imageRows = db.query(`
@@ -170,15 +183,17 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
     body: JSON.stringify(requestBody),
   });
 
+  // Read body once — response.text() and response.json() cannot both be called on the same Response.
+  const rawText = await response.text().catch(() => '<unreadable>');
+
   if (!response.ok) {
-    const errText = await response.text().catch(() => '<unreadable>');
     throw new Error(
-      `[gemini] API request failed: HTTP ${response.status} — ${errText.slice(0, 400)}`
+      `[gemini] API request failed: HTTP ${response.status} — ${rawText.slice(0, 400)}`
     );
   }
 
   // ── 5. Parse + validate response ───────────────────────────────────────────
-  const geminiResponse = await response.json() as {
+  let geminiResponse: {
     candidates?: Array<{
       content?: {
         parts?: Array<{ text?: string }>;
@@ -186,6 +201,15 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
       finishReason?: string;
     }>;
   };
+  try {
+    geminiResponse = JSON.parse(rawText) as typeof geminiResponse;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const ct = response.headers.get('content-type') ?? '<no content-type>';
+    throw new Error(
+      `[gemini] envelope JSON malformed: HTTP ${response.status} ct=${ct} parseError=${msg} body=${rawText.slice(0, 400)}`
+    );
+  }
 
   const candidate = geminiResponse.candidates?.[0];
   if (candidate?.finishReason === 'MAX_TOKENS') {
