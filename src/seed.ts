@@ -12,7 +12,7 @@ export function seedIfEmpty(): void {
   `).run(
     'usr_demo_01',
     'demo@everbetter.com',
-    'Sarah Chen',
+    'Sienna Chen',
     JSON.stringify({
       age: 32,
       weight_lbs: 140,
