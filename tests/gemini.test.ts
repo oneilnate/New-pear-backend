@@ -109,6 +109,7 @@ function mockGeminiResponse(result: {
         content: {
           parts: [{ text: JSON.stringify(result) }],
         },
+        finishReason: 'STOP',
       },
     ],
   };

@@ -158,7 +158,7 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
       responseMimeType: 'application/json',
       responseSchema: RESPONSE_SCHEMA,
       temperature: 0.7,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 16384,
     },
   };
 
@@ -183,10 +183,18 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
       content?: {
         parts?: Array<{ text?: string }>;
       };
+      finishReason?: string;
     }>;
   };
 
-  const textPart = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidate = geminiResponse.candidates?.[0];
+  if (candidate?.finishReason === 'MAX_TOKENS') {
+    throw new Error(
+      `[gemini] response truncated at maxOutputTokens limit (16384) — bump maxOutputTokens or shorten prompt. Partial text: ${(candidate.content?.parts?.[0]?.text || '').slice(0, 200)}`
+    );
+  }
+
+  const textPart = candidate?.content?.parts?.[0]?.text;
   if (!textPart) {
     throw new Error(
       `[gemini] no text in response: ${JSON.stringify(geminiResponse).slice(0, 400)}`
