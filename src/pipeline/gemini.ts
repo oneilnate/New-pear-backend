@@ -29,11 +29,11 @@ const RESPONSE_SCHEMA = {
   properties: {
     title: { type: 'string', description: 'Episode title, max 80 characters.' },
     summary: { type: 'string', description: 'One-paragraph plain-text summary for the episode card.' },
-    script: { type: 'string', description: 'Full spoken script for Sarah voice TTS. 60-180 seconds when read aloud (~150-450 words).' },
+    script: { type: 'string', description: 'Full spoken script for TTS narration. 60-180 seconds when read aloud (~150-450 words). The narrator should not introduce themselves by name.' },
     highlights: {
       type: 'array',
       items: { type: 'string' },
-      description: 'Top 2-3 specific nutrition insights or gaps identified (fiber, sugar, protein, etc.).',
+      description: 'Top 2-3 directional nutrition observations — what is going well and what could improve. No gram counts. Examples: "Strong protein variety", "Could use more colorful vegetables", "Sugar-heavy breakfast pattern".',
     },
   },
   required: ['title', 'summary', 'script', 'highlights'],
@@ -43,8 +43,13 @@ const RESPONSE_SCHEMA = {
 const SYSTEM_PROMPT =
   'You are a warm, knowledgeable nutrition coach who creates personalized weekly podcast summaries. ' +
   'Your tone is encouraging, specific, and evidence-based. ' +
-  'You identify concrete nutrition gaps (fiber, protein, sugar, micronutrients) and offer one actionable suggestion per gap. ' +
-  'Scripts should feel natural when spoken aloud and run 60-180 seconds (roughly 150-450 words).';
+  'Focus on overall macro balance (protein, fats, carbs, fiber) and nutrition quality — NOT specific gram counts. ' +
+  'Highlight the good choices the user made, point out less-than-ideal choices, and suggest concrete swaps (e.g., "swap the white rice for quinoa" rather than "add 12g of fiber"). ' +
+  'Speak directionally — "you are getting plenty of healthy fats", "you could use more fiber-rich vegetables", "your protein looks well-distributed". ' +
+  'Avoid numeric prescriptions, gram counts, calorie counts, or precise macro percentages. ' +
+  'Scripts should feel natural when spoken aloud and run 60-180 seconds (roughly 150-450 words). ' +
+  'Do NOT introduce yourself by name or refer to yourself as a host, narrator, or coach with a name. ' +
+  'Address the user directly by their first name when natural.';
 
 /**
  * Run the Gemini 2.5 Pro vision+script stage for a given pod.
