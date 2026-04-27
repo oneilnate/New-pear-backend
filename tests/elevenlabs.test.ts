@@ -147,12 +147,14 @@ describe('synthesizeAudio — unit (mocked fetch)', () => {
     const parsedBody = JSON.parse(init.body as string) as {
       text: string;
       model_id: string;
-      voice_settings: { stability: number; similarity_boost: number };
+      voice_settings: { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean };
     };
     expect(parsedBody.text).toBe('Hello world. This is a test.');
-    expect(parsedBody.model_id).toBe('eleven_turbo_v2_5');
-    expect(parsedBody.voice_settings.stability).toBe(0.5);
+    expect(parsedBody.model_id).toBe('eleven_multilingual_v2');
+    expect(parsedBody.voice_settings.stability).toBe(0.35);
     expect(parsedBody.voice_settings.similarity_boost).toBe(0.75);
+    expect(parsedBody.voice_settings.style).toBe(0.45);
+    expect(parsedBody.voice_settings.use_speaker_boost).toBe(true);
   });
 
   it('returns audioPath + durationSec and writes MP3 to disk', async () => {

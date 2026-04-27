@@ -19,7 +19,7 @@ import { mp3DurationSec } from './mp3-duration.js';
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // ElevenLabs narration voice — do not rename in scripts
-const MODEL_ID = 'eleven_turbo_v2_5';
+const MODEL_ID = 'eleven_multilingual_v2';
 const ELEVEN_API_BASE = 'https://api.elevenlabs.io';
 const MAX_RETRIES = 2;
 const MIN_DURATION_SEC = 60;
@@ -118,8 +118,10 @@ async function callElevenLabs(
     text: script,
     model_id: MODEL_ID,
     voice_settings: {
-      stability: 0.5,
+      stability: 0.35,
       similarity_boost: 0.75,
+      style: 0.45,
+      use_speaker_boost: true,
     },
   });
 
