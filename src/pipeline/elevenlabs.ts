@@ -1,7 +1,7 @@
 /**
- * ElevenLabs TTS stage — Sarah voice (F4-E2).
+ * ElevenLabs TTS stage — narration voice (F4-E2).
  *
- * Synthesizes a script to MP3 using Sarah voice (EXAVITQu4vr4xnSDxMaL)
+ * Synthesizes a script to MP3 using the configured narration voice (EXAVITQu4vr4xnSDxMaL)
  * with model eleven_turbo_v2_5. Audio is written to:
  *   <FOODPOD_MEDIA_DIR>/audio/<episodeId>.mp3
  *
@@ -18,7 +18,7 @@ import { mp3DurationSec } from './mp3-duration.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah
+const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // ElevenLabs narration voice — do not rename in scripts
 const MODEL_ID = 'eleven_turbo_v2_5';
 const ELEVEN_API_BASE = 'https://api.elevenlabs.io';
 const MAX_RETRIES = 2;
@@ -35,7 +35,7 @@ export interface SynthesizeResult {
 }
 
 /**
- * Synthesize `script` to MP3 using ElevenLabs Sarah voice.
+ * Synthesize `script` to MP3 using the ElevenLabs narration voice.
  *
  * @param script    The TTS script text.
  * @param episodeId Used to name the output file.
