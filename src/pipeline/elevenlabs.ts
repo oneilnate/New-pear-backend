@@ -15,6 +15,7 @@
 import fs from 'fs';
 import path from 'path';
 import { mp3DurationSec } from './mp3-duration.js';
+import { applyPronunciationFixes } from './pronunciation.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -114,8 +115,13 @@ async function callElevenLabs(
 ): Promise<void> {
   const url = `${ELEVEN_API_BASE}/v1/text-to-speech/${VOICE_ID}`;
 
+  const { text: spokenText, replacements } = applyPronunciationFixes(script);
+  if (replacements > 0) {
+    console.log(`[elevenlabs] applied ${replacements} pronunciation fix(es)`);
+  }
+
   const body = JSON.stringify({
-    text: script,
+    text: spokenText,
     model_id: MODEL_ID,
     voice_settings: {
       stability: 0.35,
