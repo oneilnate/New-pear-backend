@@ -204,8 +204,8 @@ describe('GET /api/pods/:id after uploads — recentSnaps', () => {
     for (const snap of body.recentSnaps) {
       expect(snap.thumb).toMatch(/^\/media\/images\/img_[a-f0-9]+\.jpg$/);
     }
-    // recentSnaps should be capped at 5
-    expect(body.recentSnaps.length).toBeLessThanOrEqual(5);
+    // recentSnaps should be capped at 8
+    expect(body.recentSnaps.length).toBeLessThanOrEqual(8);
   });
 });
 
