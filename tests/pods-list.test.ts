@@ -59,7 +59,7 @@ describe('GET /api/pods/current', () => {
     expect(typeof body.id).toBe('string');
     expect(body.id).toMatch(/^pod_/);
     expect(body.status).toBe('collecting');
-    expect(body.targetCount).toBe(7);
+    expect(body.targetCount).toBe(8);
     expect(body.capturedCount).toBe(0);
     expect(Array.isArray(body.recentSnaps)).toBe(true);
     expect(body.episode).toBeNull();
@@ -88,11 +88,11 @@ describe('GET /api/pods/current', () => {
     expect(res.status).toBe(200);
   });
 
-  it('auto-created pod has targetCount=7', async () => {
+  it('auto-created pod has targetCount=8', async () => {
     const res = await app.fetch(new Request('http://localhost/api/pods/current'));
     expect(res.status).toBe(200);
     const body = await res.json() as { targetCount: number };
-    expect(body.targetCount).toBe(7);
+    expect(body.targetCount).toBe(8);
   });
 });
 
@@ -144,7 +144,7 @@ describe('GET /api/pods', () => {
 // ─── POST /api/pods ────────────────────────────────────────────────────────
 
 describe('POST /api/pods', () => {
-  it('returns 201 with a new pod at default target_count=7', async () => {
+  it('returns 201 with a new pod at default target_count=8', async () => {
     const res = await app.fetch(
       new Request('http://localhost/api/pods', { method: 'POST' })
     );
@@ -160,7 +160,7 @@ describe('POST /api/pods', () => {
     expect(typeof body.id).toBe('string');
     expect(body.id).toMatch(/^pod_/);
     expect(body.status).toBe('collecting');
-    expect(body.targetCount).toBe(7);
+    expect(body.targetCount).toBe(8);
     expect(body.capturedCount).toBe(0);
     expect(Array.isArray(body.recentSnaps)).toBe(true);
     expect(body.episode).toBeNull();

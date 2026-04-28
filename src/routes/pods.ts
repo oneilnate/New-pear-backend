@@ -32,7 +32,7 @@ function getBaseUrl(c: Context): string {
 }
 
 /** Default target meal count for a new pod. */
-const DEFAULT_TARGET_COUNT = 7;
+const DEFAULT_TARGET_COUNT = 8;
 
 /** Demo user ID (single-user demo mode). */
 const DEMO_USER_ID = 'usr_demo_01';
@@ -52,7 +52,7 @@ function buildPodResponse(
   c: Context
 ): Record<string, unknown> {
   const snaps = db.query(`
-    SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number DESC LIMIT 5
+    SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number ASC LIMIT 8
   `).all(pod.id) as Array<{ id: string; image_path: string; rating: string | null }>;
 
   const recentSnaps = snaps.map((s) => ({
@@ -232,7 +232,7 @@ pods.get('/api/pods/:id', (c) => {
   }
 
   const snaps = db.query(`
-    SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number DESC LIMIT 5
+    SELECT id, image_path, rating FROM meal_images WHERE pod_id = ? ORDER BY sequence_number ASC LIMIT 8
   `).all(id) as Array<{ id: string; image_path: string; rating: string | null }>;
 
   const recentSnaps = snaps.map((s) => ({
