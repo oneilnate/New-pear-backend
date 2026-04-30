@@ -132,9 +132,9 @@ describe('synthesizeAudio — unit (mocked fetch)', () => {
     expect(calls.length).toBeGreaterThanOrEqual(1);
     const { url, init } = calls[0];
 
-    // Correct endpoint with Sarah voice ID
+    // Correct endpoint with Alice voice ID
     expect(url).toBe(
-      'https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL'
+      'https://api.elevenlabs.io/v1/text-to-speech/Xb7hH8MSUJpSbSDYk0k2'
     );
 
     // Required headers
@@ -276,7 +276,7 @@ describe.skipIf(!LIVE_KEY)(
         const { synthesizeAudio } = await import('../src/pipeline/elevenlabs.js');
 
         const result = await synthesizeAudio(
-          'Hello. This is a short test of the Sarah voice synthesis pipeline.',
+          'Hello. This is a short test of the Alice voice synthesis pipeline.',
           'ep_integration_test'
         );
 
