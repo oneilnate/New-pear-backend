@@ -19,7 +19,7 @@ import { applyPronunciationFixes } from './pronunciation.js';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // ElevenLabs narration voice — do not rename in scripts
+const VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2'; // Alice — British female, clear educator tone
 const MODEL_ID = 'eleven_multilingual_v2';
 const ELEVEN_API_BASE = 'https://api.elevenlabs.io';
 const MAX_RETRIES = 2;
