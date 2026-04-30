@@ -6,29 +6,32 @@
  * respell problem words phonetically before sending the script.
  *
  * Whole-word, case-insensitive replacement.
+ * All respellings are smooth, unhyphenated, lowercase — no hyphens (pause
+ * points) and no ALL-CAPS (unnatural stress) so ElevenLabs reads them as
+ * single flowing words.
  */
 
 export const PRONUNCIATION_MAP: Array<[RegExp, string]> = [
-  // English units that come out wrong
-  [/\bounces\b/gi, 'OWN-sez'],
-  [/\bounce\b/gi, 'OWN-suh'],
+  // English units
+  [/\bounces\b/gi, 'ownsez'],
+  [/\bounce\b/gi, 'ownse'],
   [/\boz\b/gi, 'ounces'],
 
-  // Loanwords / cuisine vocabulary
-  [/\bbanh\s+mi\b/gi, 'bahn mee'],
-  [/\bbánh\s+mì\b/gi, 'bahn mee'],
-  [/\bquinoa\b/gi, 'KEEN-wah'],
-  [/\baçaí\b/gi, 'ah-sah-EE'],
-  [/\baçai\b/gi, 'ah-sah-EE'],
-  [/\bacai\b/gi, 'ah-sah-EE'],
-  [/\bgyros?\b/gi, 'YEER-ohs'],
+  // Loanwords — smooth, unhyphenated, lowercase
+  [/\bbanh\s+mi\b/gi, 'bon mee'],
+  [/\bbánh\s+mì\b/gi, 'bon mee'],
+  [/\bquinoa\b/gi, 'keenwah'],
+  [/\baçaí\b/gi, 'ahsahee'],
+  [/\baçai\b/gi, 'ahsahee'],
+  [/\bacai\b/gi, 'ahsahee'],
+  [/\bgyros?\b/gi, 'yeerohs'],
   [/\bpho\b/gi, 'fuh'],
-  [/\bedamame\b/gi, 'eh-dah-MAH-may'],
-  [/\bkombucha\b/gi, 'kom-BOO-cha'],
-  [/\btahini\b/gi, 'tah-HEE-nee'],
-  [/\bbruschetta\b/gi, 'broo-SKET-tah'],
-  [/\bgnocchi\b/gi, 'NYOH-kee'],
-  [/\bjicama\b/gi, 'HEE-kah-mah'],
+  [/\bedamame\b/gi, 'edamamay'],
+  [/\bkombucha\b/gi, 'komboocha'],
+  [/\btahini\b/gi, 'taheenee'],
+  [/\bbruschetta\b/gi, 'brooskettah'],
+  [/\bgnocchi\b/gi, 'nyohkee'],
+  [/\bjicama\b/gi, 'heekamah'],
 ];
 
 export function applyPronunciationFixes(text: string): { text: string; replacements: number } {
