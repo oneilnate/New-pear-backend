@@ -9,9 +9,9 @@ import { describe, it, expect } from 'vitest';
 import { applyPronunciationFixes } from '../src/pipeline/pronunciation.js';
 
 describe('applyPronunciationFixes', () => {
-  it('replaces "ounces" with OWN-sez', () => {
+  it('replaces "ounces" with ownsez', () => {
     const { text, replacements } = applyPronunciationFixes('Add 6 ounces of water.');
-    expect(text).toBe('Add 6 OWN-sez of water.');
+    expect(text).toBe('Add 6 ownsez of water.');
     expect(replacements).toBe(1);
   });
 
@@ -21,15 +21,15 @@ describe('applyPronunciationFixes', () => {
     expect(replacements).toBe(1);
   });
 
-  it('replaces "Banh Mi" (mixed case) → "bahn mee"', () => {
+  it('replaces "Banh Mi" (mixed case) → "bon mee"', () => {
     const { text, replacements } = applyPronunciationFixes('Order a Banh Mi sandwich.');
-    expect(text).toBe('Order a bahn mee sandwich.');
+    expect(text).toBe('Order a bon mee sandwich.');
     expect(replacements).toBe(1);
   });
 
-  it('replaces "quinoa" → "KEEN-wah"', () => {
+  it('replaces "quinoa" → "keenwah"', () => {
     const { text, replacements } = applyPronunciationFixes('Serve with quinoa on the side.');
-    expect(text).toBe('Serve with KEEN-wah on the side.');
+    expect(text).toBe('Serve with keenwah on the side.');
     expect(replacements).toBe(1);
   });
 
@@ -50,13 +50,13 @@ describe('applyPronunciationFixes', () => {
     const { text, replacements } = applyPronunciationFixes(
       'Use 4 oz of quinoa and 2 ounces of tahini.'
     );
-    expect(text).toBe('Use 4 ounces of KEEN-wah and 2 OWN-sez of tah-HEE-nee.');
-    expect(replacements).toBe(4); // oz→ounces + ounces→OWN-sez + quinoa→KEEN-wah + tahini→tah-HEE-nee
+    expect(text).toBe('Use 4 ounces of keenwah and 2 ownsez of taheenee.');
+    expect(replacements).toBe(4); // oz→ounces + quinoa→keenwah + ounces→ownsez + tahini→taheenee
   });
 
   it('is case-insensitive for ounces', () => {
     const { text } = applyPronunciationFixes('OUNCES and Ounces and ounces');
-    expect(text).toBe('OWN-sez and OWN-sez and OWN-sez');
+    expect(text).toBe('ownsez and ownsez and ownsez');
   });
 
   it('does not replace "oz" inside a longer word', () => {
