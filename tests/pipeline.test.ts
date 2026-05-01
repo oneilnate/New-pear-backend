@@ -306,12 +306,12 @@ describe('runPipeline — unit (mocked Gemini + ElevenLabs)', () => {
     await expect(runPipeline(podId)).rejects.toThrow(/missing credentials/);
   });
 
-  it('enriches script with swap suggestions when highlights mention nutrient gaps', async () => {
+  it('passes Gemini script to ElevenLabs unchanged — no swap segments appended', async () => {
     const podId = `pod_unit_swaps_${Date.now()}`;
     await makePod(podId);
 
     mockBothApis({
-      title: 'Swap Test',
+      title: 'Script Passthrough Test',
       summary: 'Summary.',
       script: 'Your diet is low in fiber.',
       highlights: ['You are not getting enough fiber in your meals', 'protein could be improved'],
@@ -332,10 +332,10 @@ describe('runPipeline — unit (mocked Gemini + ElevenLabs)', () => {
     const { runPipeline } = await import('../src/pipeline/run.js');
     await runPipeline(podId);
 
-    // Script should contain swap suggestions appended after original script
+    // Script should be passed through exactly as Gemini produced it — no swap appendage
     expect(capturedScript).toContain('Your diet is low in fiber');
-    // Swap library has fiber entries so enrichment should fire
-    expect(capturedScript).toContain('Try swapping');
+    expect(capturedScript).not.toContain('Try swapping');
+    expect(capturedScript).not.toContain('Here are a few easy swaps');
   });
 });
 
