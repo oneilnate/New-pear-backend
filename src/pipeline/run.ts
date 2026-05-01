@@ -1,7 +1,7 @@
 /**
  * Pipeline orchestrator — F4-E3.
  *
- * Wires Gemini vision+script → swap-library enrichment → ElevenLabs TTS.
+ * Wires Gemini vision+script → ElevenLabs TTS.
  * All operations run inline (no queue, no worker) awaited from POST /complete.
  *
  * State machine:
@@ -14,7 +14,6 @@ import crypto from 'crypto';
 import db from '../db.js';
 import { runVisionAndScript } from './gemini.js';
 import { synthesizeAudio } from './elevenlabs.js';
-import { suggestSwaps } from '../data/swap-library.js';
 
 // ── Public return type ────────────────────────────────────────────────────────
 
@@ -42,7 +41,7 @@ export class PodNotReadyError extends Error {
  * Steps:
  *  1. Load pod + validate captured_count >= target_count
  *  2. Transition pod.status → 'generating'
- *  3. Call Gemini vision+script (enriched with suggestSwaps gaps)
+ *  3. Call Gemini vision+script
  *  4. Synthesize MP3 via ElevenLabs
  *  5. Insert episodes row
  *  6. Transition pod.status → 'ready'
@@ -93,35 +92,10 @@ export async function runPipeline(podId: string): Promise<PipelineResult> {
     console.info(`[pipeline] pod=${podId} calling Gemini vision+script`);
     const geminiResult = await runVisionAndScript(podId);
 
-    // Enrich: infer gap categories from highlights and append swap suggestions
-    const gapKeywords = ['fiber', 'sugar', 'protein', 'sodium', 'saturated_fat', 'produce'];
-    const detectedGaps = gapKeywords.filter((gap) =>
-      geminiResult.highlights.some((h) =>
-        h.toLowerCase().includes(gap.replace('_', ' ')) ||
-        h.toLowerCase().includes(gap)
-      )
-    );
-    const swaps = suggestSwaps(detectedGaps);
-    if (swaps.length > 0) {
-      console.info(
-        `[pipeline] pod=${podId} enriching script with ${swaps.length} swap suggestion(s) ` +
-          `for gaps: ${detectedGaps.join(', ')}`
-      );
-    }
-
-    // Build enriched script: append swap tips after the main TTS script
-    let enrichedScript = geminiResult.script;
-    if (swaps.length > 0) {
-      const swapLines = swaps
-        .map((s) => `Try swapping ${s.from} for ${s.to}. ${s.why}`)
-        .join(' ');
-      enrichedScript = `${enrichedScript} Here are a few easy swaps: ${swapLines}`;
-    }
-
     // ── Step 4: ElevenLabs TTS ──────────────────────────────────────────────
     const episodeId = `ep_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
     console.info(`[pipeline] pod=${podId} synthesizing audio episodeId=${episodeId}`);
-    const { audioPath, durationSec } = await synthesizeAudio(enrichedScript, episodeId);
+    const { audioPath, durationSec } = await synthesizeAudio(geminiResult.script, episodeId);
 
     // ── Step 5: Insert episodes row ─────────────────────────────────────────
     const now = new Date().toISOString();
@@ -135,7 +109,7 @@ export async function runPipeline(podId: string): Promise<PipelineResult> {
       podId,
       geminiResult.title,
       geminiResult.summary,
-      enrichedScript,
+      geminiResult.script,
       audioPath,
       Math.round(durationSec),
       JSON.stringify(geminiResult.highlights),
