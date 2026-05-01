@@ -181,7 +181,7 @@ describe('runVisionAndScript — unit (mocked fetch)', () => {
 
     // Verify URL contains model name and key
     const [calledUrl, calledInit] = (mockFetch as Mock).mock.calls[0] as [string, RequestInit];
-    expect(calledUrl).toContain('gemini-2.5-pro');
+    expect(calledUrl).toContain('gemini-2.5-flash');
     expect(calledUrl).toContain('generateContent');
     expect(calledUrl).toContain('test-key-mock');
 
