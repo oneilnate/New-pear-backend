@@ -5,6 +5,7 @@ import db from '../db.js';
 import path from 'path';
 import fs from 'fs';
 import { runPipeline, PodNotReadyError } from '../pipeline/run.js';
+import { resolveUserId } from '../auth.js';
 
 const pods = new Hono();
 
@@ -34,8 +35,6 @@ function getBaseUrl(c: Context): string {
 /** Default target meal count for a new pod. */
 const DEFAULT_TARGET_COUNT = 8;
 
-/** Demo user ID (single-user demo mode). */
-const DEMO_USER_ID = 'usr_demo_01';
 
 // ─── Helper: build the full pod response shape (reused by /current and /:id) ───
 
@@ -112,7 +111,7 @@ function buildPodResponse(
 // Never returns 404.
 
 pods.get('/api/pods/current', (c) => {
-  const userId = DEMO_USER_ID;
+  const userId = resolveUserId(c);
 
   let pod = db.query(`
     SELECT id, status, target_count, captured_count, created_at, ready_at, failure_reason
@@ -158,7 +157,7 @@ pods.get('/api/pods/current', (c) => {
 // Minimal shape: id, created_at, status, captured_count, target_count.
 
 pods.get('/api/pods', (c) => {
-  const userId = DEMO_USER_ID;
+  const userId = resolveUserId(c);
 
   const allPods = db.query(`
     SELECT id, status, target_count, captured_count, created_at
@@ -186,7 +185,7 @@ pods.get('/api/pods', (c) => {
 // Returns the new pod in the standard Pod response shape.
 
 pods.post('/api/pods', (c) => {
-  const userId = DEMO_USER_ID;
+  const userId = resolveUserId(c);
 
   const newPodId = `pod_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
   db.query(`
