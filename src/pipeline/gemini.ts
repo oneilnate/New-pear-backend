@@ -185,21 +185,38 @@ export async function runVisionAndScript(podId: string): Promise<GeminiPodcastRe
     },
   };
 
-  // ── 4. Call Gemini API ──────────────────────────────────────────────────────
+  // ── 4. Call Gemini API (with retry + backoff on 503/429) ───────────────────
   const url = `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody),
-  });
 
-  // Read body once — response.text() and response.json() cannot both be called on the same Response.
-  const rawText = await response.text().catch(() => '<unreadable>');
+  const MAX_ATTEMPTS = 4;
+  const RETRY_DELAYS_MS = [2000, 4000, 8000]; // 2s, 4s, 8s between attempts
 
-  if (!response.ok) {
-    throw new Error(
-      `[gemini] API request failed: HTTP ${response.status} — ${rawText.slice(0, 400)}`
+  let response: Response | null = null;
+  let rawText = '<unreadable>';
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+    // Read body once per attempt
+    rawText = await response.text().catch(() => '<unreadable>');
+
+    if (response.ok) break; // success — exit retry loop
+
+    const isRetryable = response.status === 503 || response.status === 429;
+    if (!isRetryable || attempt === MAX_ATTEMPTS) {
+      throw new Error(
+        `[gemini] API request failed: HTTP ${response.status} — ${rawText.slice(0, 400)}`
+      );
+    }
+
+    const delayMs = RETRY_DELAYS_MS[attempt - 1] ?? 8000;
+    console.warn(
+      `[gemini] HTTP ${response.status} on attempt ${attempt}/${MAX_ATTEMPTS} — retrying in ${delayMs}ms`
     );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 
   // ── 5. Parse + validate response ───────────────────────────────────────────
