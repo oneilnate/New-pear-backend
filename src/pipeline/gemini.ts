@@ -21,7 +21,7 @@ export interface GeminiPodcastResult {
 
 /** Gemini API base URL (v1beta for structured output / responseSchema support). */
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 /** JSON schema sent as responseSchema so Gemini returns structured output. */
 const RESPONSE_SCHEMA = {
